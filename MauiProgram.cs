@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using WalletManager.Database;
+using WalletManager.Service;
 
 namespace WalletManager
 {
@@ -13,8 +15,13 @@ namespace WalletManager
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
+            builder.Services.AddSingleton<JsonFileService<DataStore>>();
 
             builder.Services.AddMauiBlazorWebView();
+           /* builder.Services.AddSingleton<Appdbcontext>();*/
+
+
+
 
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();

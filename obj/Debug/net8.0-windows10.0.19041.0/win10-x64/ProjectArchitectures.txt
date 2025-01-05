@@ -1,0 +1,1 @@
+D:\MODULES\3rd year\Application development\WalletManager\WalletManager.csproj;x64

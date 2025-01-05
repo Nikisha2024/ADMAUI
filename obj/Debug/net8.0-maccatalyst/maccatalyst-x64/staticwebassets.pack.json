@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\scopedcss\\bundle\\WalletManager.styles.css",
+      "PackagePath": "staticwebassets\\WalletManager.styles.css"
+    },
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\wwwroot\\css\\app.css",
+      "PackagePath": "staticwebassets\\css\\app.css"
+    },
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\wwwroot\\css\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\wwwroot\\css\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\css\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "D:\\MODULES\\3rd year\\Application development\\WalletManager\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.WalletManager.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.build.WalletManager.props",
+      "PackagePath": "build\\WalletManager.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildMultiTargeting.WalletManager.props",
+      "PackagePath": "buildMultiTargeting\\WalletManager.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0-maccatalyst\\maccatalyst-x64\\staticwebassets\\msbuild.buildTransitive.WalletManager.props",
+      "PackagePath": "buildTransitive\\WalletManager.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

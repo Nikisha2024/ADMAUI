@@ -1,0 +1,157 @@
+﻿@page "/cashin"
+@inject JsonFileService<DataStore> DataStoreService
+
+<h3>Cash In</h3>
+<form @onsubmit="HandleCashIn">
+    <label>Amount:</label>
+    <input @bind="Amount" type="number" />
+    <label>Note:</label>
+    <input @bind="Note" />
+    <label>Tags:</label>
+    <select @bind="SelectedTagId">
+        <option value="">Select a tag</option>
+        @foreach (var tag in Tags)
+        {
+            <option value="@tag.TagId">@tag.TagName</option>
+        }
+    </select>
+    <button type="submit">Add</button>
+</form>
+
+<p style="color:red">@ErrorMessage</p>
+
+@code {
+    private decimal Amount;
+    private string Note;
+    private string ErrorMessage;
+    private List<Transaction> transactions = new();
+    private List<Credit> credits = new();
+    private List<Tag> Tags = new();  // Initialize Tags to avoid null reference
+    private int? SelectedTagId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Load data from the JSON file
+            var dataStore = await DataStoreService.LoadDataAsync();
+
+            // Safely initialize lists to prevent null reference exceptions
+            transactions = dataStore?.Transactions?.ToList() ?? new List<Transaction>();
+            credits = dataStore?.credits?.ToList() ?? new List<Credit>();
+            Tags = dataStore?.Tagss?.ToList() ?? new List<Tag>();  // Ensure Tags is initialized
+
+            // Debug logs to check if data is loaded correctly
+            Console.WriteLine($"Transactions Loaded: {transactions.Count}");
+            Console.WriteLine($"Credits Loaded: {credits.Count}");
+            Console.WriteLine($"Tags Loaded: {Tags.Count}");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading data: {ex.Message}";
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+
+    private async Task HandleCashIn()
+    {
+        try
+        {
+            if (Amount <= 0)
+            {
+                ErrorMessage = "Amount must be greater than zero.";
+                return;
+            }
+
+            // Debug logs to see the current state of inputs
+            Console.WriteLine($"Amount: {Amount}, Note: {Note}, SelectedTagId: {SelectedTagId}");
+
+            // Process pending debts (reduce debt, but do not set Amount to 0 prematurely)
+            var pendingDebt = transactions
+                .Where(t => t.TransactionLabel == "Debt" && !t.IsDebtCleared)
+                .ToList();
+
+            decimal originalAmount = Amount; // Save the original Amount to use in transactions
+
+            foreach (var debt in pendingDebt)
+            {
+                if (Amount <= 0) break;
+
+                var debtAmount = debt.Amount;
+
+                // If the cash-in amount is greater than or equal to the debt, set debt to zero and clear it
+                if (Amount >= debtAmount)
+                {
+                    debt.Amount = 0; // Set debt amount to zero
+                    debt.IsDebtCleared = true; // Mark as cleared
+                    Amount -= debtAmount; // Deduct the entire debt amount from the remaining cash-in amount
+                }
+                else
+                {
+                    debt.Amount -= Amount; // Partially reduce the debt amount by the cash-in amount
+                    Amount = 0; // No more cash-in amount left
+                }
+
+                // Debug log to show how much debt was processed
+                Console.WriteLine($"Debt processed: {debt.Amount} remaining, Cash-In remaining: {Amount}");
+            }
+
+            // After debt processing, insert the original Amount into the transaction and credit
+            string tagName = string.Empty;
+            var selectedTag = Tags.FirstOrDefault(tag => tag.TagId == SelectedTagId);
+            if (selectedTag != null)
+            {
+                tagName = selectedTag.TagName; // Assign the tag name based on selected tag ID
+            }
+
+            // Create and add new transaction for credit (Insert the full original Amount)
+            var newTransaction = new Transaction
+                {
+                    TransactionId = transactions.Count + 1,
+                    TransactionLabel = "Credit",
+                    Amount = originalAmount,  // Insert the full original amount
+                    TransactionOf = Note,
+                    TagName = tagName, // Store the tag name, not the ID
+                    Date = DateTime.Now
+                };
+            transactions.Add(newTransaction);
+
+            // Add corresponding credit entry (Insert the full original Amount)
+            var newCredit = new Credit
+                {
+                    CreditId = credits.Count + 1,
+                    CreditAmount = originalAmount,  // Insert the full original amount
+                    CreditDescription = Note,
+                    CreditDate = DateTime.Now
+                };
+            credits.Add(newCredit);
+
+            // Debug logs to verify the new credit and transaction were added
+            Console.WriteLine($"New Transaction Added: {newTransaction.TransactionId}, Amount: {originalAmount}, Tag: {tagName}");
+            Console.WriteLine($"New Credit Added: {newCredit.CreditId}, Amount: {originalAmount}");
+
+            // Save the updated data store
+            var updatedDataStore = new DataStore
+                {
+                    Transactions = transactions,
+                    credits = credits,
+                    Tagss = Tags  // Ensure tags are saved too
+                };
+            await DataStoreService.SaveDataAsync(updatedDataStore);
+
+            // Debug log to confirm data saved
+            Console.WriteLine("Data saved successfully!");
+
+            // Clear inputs and errors
+            Amount = 0;
+            Note = string.Empty;
+            SelectedTagId = null;
+            ErrorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"An error occurred while processing the cash-in: {ex.Message}";
+            Console.WriteLine($"Error occurred: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,68 @@
+﻿@* @page "/transactions"
+@inject JsonFileService<Transaction> TransactionService
+@inject JsonFileService<DataStore> DataStoreService
+
+<h3>All Transactions</h3>
+
+@if (transactions == null)
+{
+    <p>Loading transactions...</p>
+}
+else if (!transactions.Any())
+{
+    <p>No transactions found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Label</th>
+                <th>Amount</th>
+                <th>Of</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in transactions)
+            {
+                <tr>
+                    <td>@transaction.TransactionId</td>
+                    <td>@transaction.TransactionLabel</td>
+                    <td>@transaction.Amount</td>
+                    <td>@transaction.TransactionOf</td>
+                    <td>@transaction.Date.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Transaction> transactions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Load DataStore from JSON file
+            var dataStoreJson = await DataStoreService.LoadDataAsync();
+
+            // Handle the deserialization with proper DateTime handling
+            var dataStore = JsonSerializer.Deserialize<DataStore>(dataStoreJson, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // Adjust this if needed
+                    Converters = { new JsonDateTimeConverter() } // Correctly add the custom converter
+                });
+
+            transactions = dataStore?.Transactions ?? new List<Transaction>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+            transactions = new List<Transaction>();
+        }
+    }
+}
+ *@

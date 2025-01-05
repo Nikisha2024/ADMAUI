@@ -1,0 +1,216 @@
+﻿@page "/dashboard"
+@inject JsonFileService<DataStore> DataStoreService
+
+<div class="container mt-4">
+    <!-- Top Summary Section -->
+    <div class="card p-4 shadow-sm bg-success text-white rounded-3">
+        <div class="row">
+            <div class="col-12">
+                <h5>Howdy,</h5>
+                <h4><b>Kang Smile</b></h4>
+            </div>
+        </div>
+        <div class="row mt-3 text-center">
+            <div class="col-3">
+                <p>Total Transactions</p>
+                <h5><b>@TotalTransactions</b></h5>
+            </div>
+            <div class="col-3">
+                <p>Total Inflows</p>
+                <h5><b>@TotalInflows.ToString("C")</b></h5>
+            </div>
+            <div class="col-3">
+                <p>Total Outflows</p>
+                <h5><b>@TotalOutflows.ToString("C")</b></h5>
+            </div>
+            <div class="col-3">
+                <p>Balance</p>
+                <h5><b>@Balance.ToString("C")</b></h5>
+            </div>
+        </div>
+        <div class="row mt-3 text-center">
+            <div class="col-4">
+                <p>Total Debts</p>
+                <h5><b>@TotalDebts.ToString("C")</b></h5>
+            </div>
+            <div class="col-4">
+                <p>Cleared Debts</p>
+                <h5><b>@ClearedDebtsCount</b></h5>
+            </div>
+            <div class="col-4">
+                <p>Pending Debts</p>
+                <h5><b>@PendingDebtsCount</b></h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sorting and Filtering Options -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <label for="sortBy" class="form-label">Sort By Transaction Type</label>
+            <select id="sortBy" class="form-select" @onchange="SortTransactionsByType">
+                <option value="">-- Select Type --</option>
+                <option value="Debit">Debit</option>
+                <option value="Credit">Credit</option>
+                <option value="Debt">Debt</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="sortOrder" class="form-label">Sort By Amount</label>
+            <select id="sortOrder" class="form-select" @onchange="SortTransactionsByAmount">
+                <option value="">-- Select Order --</option>
+                <option value="Asc">Lowest to Highest</option>
+                <option value="Desc">Highest to Lowest</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="sortByTag" class="form-label">Sort By Tag</label>
+            <select id="sortByTag" class="form-select" @onchange="SortTransactionsByTag">
+                <option value="">-- Select Tag --</option>
+                @foreach (var tag in tags)
+                {
+                    <option value="@tag">@tag</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <label for="sortByDate" class="form-label">Sort By Date</label>
+            <select id="sortByDate" class="form-select" @onchange="SortTransactionsByDate">
+                <option value="">-- Select Order --</option>
+                <option value="Newest">Newest First</option>
+                <option value="Oldest">Oldest First</option>
+            </select>
+        </div>
+        <div class="col-md-8">
+            <label for="dateRangeFilter" class="form-label">Filter By Date Range</label>
+            <div class="d-flex gap-2">
+                <input type="date" class="form-control" @bind="StartDate" />
+                <input type="date" class="form-control" @bind="EndDate" />
+                <button class="btn btn-primary" @onclick="FilterTransactionsByDateRange">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Section -->
+    <div class="mt-4">
+        <h4 class="fw-bold">Transactions</h4>
+        <div class="list-group">
+            @if (FilteredTransactions.Count == 0)
+            {
+                <div class="list-group-item text-center">
+                    <p>No transactions available for the selected criteria.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var transaction in FilteredTransactions)
+                {
+                    <div class="list-group-item d-flex justify-content-between align-items-center shadow-sm mb-2">
+                        <div>
+                            <h6 class="mb-0">@transaction.TransactionLabel</h6>
+                            <small class="text-muted">@transaction.Date.ToShortDateString()</small>
+                        </div>
+                        <span class="fw-bold" style="color: @(transaction.TransactionLabel == "Debit" ? "red" : "green")">
+                            @transaction.Amount.ToString("C")
+                        </span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private int TotalTransactions;
+    private decimal TotalInflows;
+    private decimal TotalOutflows;
+    private decimal Balance;
+    private decimal TotalDebts;
+    private int ClearedDebtsCount;
+    private int PendingDebtsCount;
+
+    private List<Transaction> Transactions = new();
+    private List<Transaction> FilteredTransactions = new();
+    private List<string> tags = new();
+
+    private DateTime? StartDate;
+    private DateTime? EndDate;
+
+    private string SelectedType = "";
+    private string SelectedOrder = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var dataStore = await DataStoreService.LoadDataAsync();
+        Transactions = dataStore?.Transactions ?? new List<Transaction>();
+        tags = dataStore?.Tagss.Select(t => t.TagName).Distinct().ToList();
+        FilteredTransactions = new List<Transaction>(Transactions);
+        UpdateSummary();
+    }
+
+    private void UpdateSummary()
+    {
+        TotalTransactions = Transactions.Count;
+        TotalInflows = Transactions.Where(t => t.TransactionLabel == "Credit").Sum(t => t.Amount);
+        TotalOutflows = Transactions.Where(t => t.TransactionLabel == "Debit").Sum(t => t.Amount);
+        TotalDebts = Transactions.Where(t => t.TransactionLabel == "Debt").Sum(t => t.Amount);
+        ClearedDebtsCount = Transactions.Count(t => t.TransactionLabel == "Debt" && t.Status == "Cleared");
+        PendingDebtsCount = Transactions.Count(t => t.TransactionLabel == "Debt" && t.Status == "Pending");
+
+        Balance = TotalInflows - TotalOutflows - Transactions
+            .Where(t => t.TransactionLabel == "Debt" && t.Status == "Pending")
+            .Sum(t => t.Amount);
+    }
+
+    private void SortTransactionsByType(ChangeEventArgs e)
+    {
+        SelectedType = e.Value?.ToString();
+        FilteredTransactions = string.IsNullOrEmpty(SelectedType)
+            ? new List<Transaction>(Transactions)
+            : Transactions.Where(t => t.TransactionLabel == SelectedType).ToList();
+    }
+
+    private void SortTransactionsByAmount(ChangeEventArgs e)
+    {
+        SelectedOrder = e.Value?.ToString();
+        FilteredTransactions = SelectedOrder switch
+        {
+            "Asc" => FilteredTransactions.OrderBy(t => t.Amount).ToList(),
+            "Desc" => FilteredTransactions.OrderByDescending(t => t.Amount).ToList(),
+            _ => new List<Transaction>(Transactions)
+        };
+    }
+
+    private void SortTransactionsByTag(ChangeEventArgs e)
+    {
+        var selectedTag = e.Value?.ToString();
+        FilteredTransactions = string.IsNullOrEmpty(selectedTag)
+            ? new List<Transaction>(Transactions)
+            : Transactions.Where(t => t.TagName == selectedTag).ToList();
+    }
+
+    private void SortTransactionsByDate(ChangeEventArgs e)
+    {
+        var sortOrder = e.Value?.ToString();
+        FilteredTransactions = sortOrder switch
+        {
+            "Newest" => Transactions.OrderByDescending(t => t.Date).ToList(),
+            "Oldest" => Transactions.OrderBy(t => t.Date).ToList(),
+            _ => new List<Transaction>(Transactions)
+        };
+    }
+
+    private void FilterTransactionsByDateRange()
+    {
+        if (StartDate.HasValue && EndDate.HasValue && EndDate.Value >= StartDate.Value)
+        {
+            FilteredTransactions = Transactions
+                .Where(t => t.Date >= StartDate.Value && t.Date <= EndDate.Value)
+                .OrderBy(t => t.Date)
+                .ToList();
+        }
+    }
+}

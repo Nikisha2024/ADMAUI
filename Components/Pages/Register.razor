@@ -1,0 +1,69 @@
+﻿@page "/register"
+@inject NavigationManager Navigation
+@inject JsonFileService<DataStore> DataStoreService
+
+<h3>Register</h3>
+
+<form @onsubmit="HandleRegister">
+    <label>Username:</label>
+    <input @bind="NewUser.UserName" />
+
+    <label>Password:</label>
+    <input @bind="NewUser.UserPassword" type="password" />
+
+    <label>Email:</label>
+    <input @bind="NewUser.UserEmail" type="email" />
+
+    <button type="submit">Register</button>
+</form>
+
+<p style="color:red">@ErrorMessage</p>
+
+@code {
+    private User NewUser = new User();  // The new user to be created
+    private string ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialization logic if needed (you can load data or check conditions)
+    }
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            // Load existing users from the JSON file
+            var dataStore = await DataStoreService.LoadDataAsync();
+            var users = dataStore.Users.ToList();
+
+            // Check if the username already exists
+            if (users.Any(u => u.UserName == NewUser.UserName))
+            {
+                ErrorMessage = "Username already exists. Please choose another.";
+                return;
+            }
+
+            // Assign a new UserId for the new user
+            NewUser.UserId = users.Count + 1;
+            NewUser.Balance = 0;  // Initial balance can be 0 or any default value you prefer
+
+            // Add the new user to the list
+            users.Add(NewUser);
+
+            // Save the updated list of users back to the JSON file
+            var updatedDataStore = new DataStore
+                {
+                    Users = users
+                };
+            await DataStoreService.SaveDataAsync(updatedDataStore);
+
+            // Redirect to the login page after successful registration
+            Navigation.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            // Handle any errors during the registration process
+            ErrorMessage = $"Error during registration: {ex.Message}";
+        }
+    }
+}
